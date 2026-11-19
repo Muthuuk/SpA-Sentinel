@@ -28,7 +28,13 @@ from spa_sentinel.card import make_card
 from spa_sentinel.models import calibration_table, prep_m4, M4_FEATURES, train_m2
 from spa_sentinel.roi import run, Assumptions
 
-OUT = os.path.join(ROOT, "docs", "screenshots")
+import argparse
+_ap = argparse.ArgumentParser(description="Regenerate README screenshots from live output.")
+_ap.add_argument("--dpi", type=int, default=200, help="image resolution (default 200)")
+_ap.add_argument("--out", default=os.path.join(ROOT, "docs", "screenshots"), help="output folder")
+_args = _ap.parse_args()
+DPI = _args.dpi
+OUT = _args.out
 os.makedirs(OUT, exist_ok=True)
 BLUE, ORANGE, AQUA, INK2 = "#2a78d6", "#eb6834", "#1baf7a", "#52514e"
 
@@ -38,7 +44,7 @@ def terminal(text, title, fname, width=100):
     for raw in text.rstrip().split("\n"):
         lines += textwrap.wrap(raw, width, subsequent_indent="    ") or [""]
     h = 0.62 + 0.165 * len(lines)
-    fig = plt.figure(figsize=(9.2, h), dpi=200)
+    fig = plt.figure(figsize=(9.2, h), dpi=DPI)
     ax = fig.add_axes([0, 0, 1, 1]); ax.axis("off"); ax.set_xlim(0, 1); ax.set_ylim(0, h)
     ax.add_patch(plt.Rectangle((0, 0), 1, h, color="#1e1f24"))
     ax.add_patch(plt.Rectangle((0, h - 0.34), 1, 0.34, color="#34363d"))
@@ -52,7 +58,7 @@ def terminal(text, title, fname, width=100):
         elif "[INFO]" in l: col = "#7ee787"
         elif l.startswith("$"): col = "#79c0ff"
         ax.text(0.015, h - 0.5 - i * 0.165, l, color=col, ha="left", va="center", fontsize=7.4, family="DejaVu Sans Mono")
-    fig.savefig(os.path.join(OUT, fname), dpi=200); plt.close(fig)
+    fig.savefig(os.path.join(OUT, fname), dpi=DPI); plt.close(fig)
 
 
 def capture(fn, *a):
@@ -75,7 +81,7 @@ terminal("$ python -m spa_sentinel.cli metrics\n\n" + cli.metrics_table(T).to_st
          "SpA-Sentinel - test-set metrics on synthetic data", "03_model_metrics.png")
 
 # 4. ROC and calibration
-fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), dpi=200)
+fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), dpi=DPI)
 for name, (y, pr), c in [("M1 flare (AUROC %.2f)" % T["m1_metrics"]["auroc"], T["m1_eval"], BLUE),
                          ("M2 infection (AUROC %.2f)" % T["m2_metrics"]["auroc"], T["m2_eval"], ORANGE)]:
     fpr, tpr, _ = roc_curve(y, pr); axes[0].plot(fpr, tpr, color=c, lw=2, label=name)
@@ -95,7 +101,7 @@ rows = []
 for tgt in (0.90, 0.95, 0.98):
     _, thr, m, _ = train_m2(cli.load_tables()["crp_episodes"], target_sensitivity=tgt)
     rows.append((tgt, m["sensitivity_infection"], m["specificity"]))
-fig, ax = plt.subplots(figsize=(6.4, 3.4), dpi=200)
+fig, ax = plt.subplots(figsize=(6.4, 3.4), dpi=DPI)
 x = np.arange(len(rows)); w = 0.36
 ax.bar(x - w / 2, [r[1] for r in rows], w, color=ORANGE, label="infections caught (sensitivity)")
 ax.bar(x + w / 2, [r[2] for r in rows], w, color=BLUE, label="flares cleared (specificity)")
@@ -110,13 +116,13 @@ plt.tight_layout(); fig.savefig(os.path.join(OUT, "05_m2_tradeoff.png")); plt.cl
 import shap
 X4 = prep_m4(T["m4_test"])[M4_FEATURES]
 sv = shap.TreeExplainer(T["m4"]).shap_values(X4)
-plt.figure(dpi=200); shap.summary_plot(sv, X4, show=False, plot_size=(7, 3.8))
+plt.figure(dpi=DPI); shap.summary_plot(sv, X4, show=False, plot_size=(7, 3.8))
 plt.title("M4: what drives predicted TNF-inhibitor response (SHAP)", fontsize=10); plt.tight_layout()
 plt.savefig(os.path.join(OUT, "06_shap_m4.png")); plt.close()
 
 # 7. Cox hazard ratios for new IBD
 s = T["m3"]["ibd"]["model"].summary
-fig, ax = plt.subplots(figsize=(6.4, 3.0), dpi=200)
+fig, ax = plt.subplots(figsize=(6.4, 3.0), dpi=DPI)
 yy = np.arange(len(s))[::-1]
 ax.errorbar(s["exp(coef)"], yy, xerr=[s["exp(coef)"] - s["exp(coef) lower 95%"], s["exp(coef) upper 95%"] - s["exp(coef)"]],
             fmt="o", color=BLUE, ecolor="#9fc3ee", capsize=3)
@@ -126,7 +132,7 @@ for sp in ["top", "right"]: ax.spines[sp].set_visible(False)
 plt.tight_layout(); fig.savefig(os.path.join(OUT, "07_cox_ibd.png")); plt.close(fig)
 
 # 8. Alert card
-make_card(cli.PATIENT_A, "advice line 0113 000 0000 (demo)", os.path.join(OUT, "08_alert_card.png"))
+make_card(cli.PATIENT_A, "advice line 0113 000 0000 (demo)", os.path.join(OUT, "08_alert_card.png"), dpi=max(DPI, 300))
 
 # 9. ROI tool
 terminal("$ python -m spa_sentinel.cli roi\n" + capture(cli.cmd_roi, type("A", (), dict(patients=1200, trusts=1, admit_avoided=0.2))) +

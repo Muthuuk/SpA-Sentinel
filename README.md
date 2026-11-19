@@ -160,7 +160,7 @@ jupyter notebook notebooks/SpA_Sentinel_Demo.ipynb
 | **Alert-card maker** | `python -m spa_sentinel.cli card --remission 6 --flare 32 --biologic TNFi --out card.png` | Makes a printable patient inflammation alert card |
 | **Synthetic data generator** | `python -m spa_sentinel.data_gen` | Rebuilds the five CSV files in `data/` |
 | **Paper figure builder** | `python tools/paper_figures.py --dpi 600` | Redraws Figures 1–5 of the paper at any resolution into `docs/figures/` |
-| **Screenshot builder** | `python tools/make_screenshots.py` | Regenerates every screenshot in this README from live output |
+| **Screenshot builder** | `python tools/make_screenshots.py [--dpi 600 --out folder]` | Regenerates every screenshot in this README from live output, at any resolution |
 | **Demo notebook** | `notebooks/SpA_Sentinel_Demo.ipynb` | End-to-end walk-through: data, models, rules, agent, explanations, ROI |
 | **Tests** | `pytest -q tests` | Checks that the safety rules behave as designed and the ROI matches the paper |
 
